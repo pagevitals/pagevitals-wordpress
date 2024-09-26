@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: PageVitals RUM Integration
+ * Plugin Name: PageVitals RUM
  * Plugin URI: https://www.pagevitals.com/
  * Description: Integrates PageVitals RUM script into your WordPress site.
  * Version: 1.0
- * Author: Lasse Schou
+ * Author: PageVitals
  * Author URI: https://pagevitals.com/
  * License: MIT
  */
@@ -20,6 +20,13 @@ class PageVitals_RUM {
         add_action('admin_init', array($this, 'page_init'));
         add_action('wp_head', array($this, 'insert_pagevitals_script'));
         add_action('send_headers', array($this, 'add_csp_headers'));
+        add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_settings_link'));
+    }
+
+    public function add_settings_link($links) {
+        $settings_link = '<a href="options-general.php?page=pagevitals-rum">' . __('Settings') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
     }
 
     public function add_plugin_page() {
@@ -121,6 +128,7 @@ class PageVitals_RUM {
             '<input type="text" id="website_id" name="pagevitals_rum_options[website_id]" value="%s" />',
             isset($this->options['website_id']) ? esc_attr($this->options['website_id']) : ''
         );
+        echo '<p class="description">You can find your website ID by going to Settings in your PageVitals account. The blue box next to "Website Settings" is your website ID.</p>';
     }
 
     public function enable_csp_callback() {

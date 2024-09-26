@@ -1,0 +1,38 @@
+name: Deploy to WordPress.org
+
+on:
+  workflow_dispatch:
+
+#on:
+#  push:
+#    branches:
+#      - main  # Trigger deployment when code is pushed to the main branch
+
+jobs:
+  deploy:
+    name: Deploy Plugin to WordPress.org
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Sync plugin assets to WordPress.org
+        uses: 10up/action-wordpress-plugin-asset-update@v1
+        with:
+          plugin-slug: pagevitals-wordpress
+          wordpress-username: ${{ secrets.WORDPRESS_USERNAME }}
+          wordpress-password: ${{ secrets.WORDPRESS_PASSWORD }}
+
+      - name: Deploy to WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@v1
+        with:
+          plugin-slug: pagevitals-wordpress
+          svn-path: ./
+          wordpress-username: ${{ secrets.WORDPRESS_USERNAME }}
+          wordpress-password: ${{ secrets.WORDPRESS_PASSWORD }}
+
+      - name: Tag the release
+        run: |
+          git tag -a "v${{ github.event.head_commit.message }}" -m "Deploy to WordPress.org"
+          git push origin --tags

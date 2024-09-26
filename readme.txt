@@ -1,4 +1,4 @@
-=== PageVitals RUM Integration ===
+=== PageVitals RUM ===
 Contributors: pagevitals
 Tags: rum, corewebvitals, analytics, performance, monitoring
 Requires at least: 5.0
