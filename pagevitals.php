@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: PageVitals RUM
+ * Plugin Name: PageVitals
  * Plugin URI: https://www.pagevitals.com/
- * Description: Integrates PageVitals RUM script into your WordPress site.
+ * Description: Monitor the Core Web Vitals of your site and stay fast!
  * Version: 1.0
  * Author: PageVitals
  * Author URI: https://pagevitals.com/
@@ -12,42 +12,47 @@
 // Exit if accessed directly
 if (!defined('ABSPATH')) exit;
 
-class PageVitals_RUM {
+class PageVitals {
     private $options;
 
     public function __construct() {
         add_action('admin_menu', array($this, 'add_plugin_page'));
         add_action('admin_init', array($this, 'page_init'));
-        add_action('wp_head', array($this, 'insert_pagevitals_script'));
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_pagevitals_script'));
         add_action('send_headers', array($this, 'add_csp_headers'));
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_settings_link'));
     }
 
     public function add_settings_link($links) {
-        $settings_link = '<a href="options-general.php?page=pagevitals-rum">' . __('Settings') . '</a>';
+        $settings_link = '<a href="options-general.php?page=pagevitals">' . __('Settings') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
 
     public function add_plugin_page() {
         add_options_page(
-            'PageVitals RUM Settings',
-            'PageVitals RUM',
+            'PageVitals Settings',
+            'PageVitals',
             'manage_options',
-            'pagevitals-rum',
+            'pagevitals',
             array($this, 'create_admin_page')
         );
     }
 
     public function create_admin_page() {
-        $this->options = get_option('pagevitals_rum_options');
+        $this->options = get_option('pagevitals_options');
         ?>
         <div class="wrap">
-            <h1>PageVitals RUM Settings</h1>
+            <h1>PageVitals</h1>
+            <br>
+            <img src="<?php echo esc_url(plugin_dir_url(__FILE__) . 'admin/static/logo.png'); ?>" alt="PageVitals">
+            <br><br>
+            <img src="<?php echo esc_url(plugin_dir_url(__FILE__) . 'admin/static/hero.webp'); ?>" alt="PageVitals hero" width="300">
+        </div>
             <form method="post" action="options.php">
             <?php
-                settings_fields('pagevitals_rum_option_group');
-                do_settings_sections('pagevitals-rum-admin');
+                settings_fields('pagevitals_option_group');
+                do_settings_sections('pagevitals-admin');
                 submit_button();
             ?>
             </form>
@@ -57,48 +62,57 @@ class PageVitals_RUM {
 
     public function page_init() {
         register_setting(
-            'pagevitals_rum_option_group',
-            'pagevitals_rum_options',
+            'pagevitals_option_group',
+            'pagevitals_options',
             array($this, 'sanitize')
         );
 
         add_settings_section(
-            'pagevitals_rum_setting_section',
-            'PageVitals RUM Settings',
+            'pagevitals_setting_section',
+            'PageVitals Settings',
             array($this, 'section_info'),
-            'pagevitals-rum-admin'
+            'pagevitals-admin'
         );
 
         add_settings_field(
             'website_id',
             'Website ID',
             array($this, 'website_id_callback'),
-            'pagevitals-rum-admin',
-            'pagevitals_rum_setting_section'
+            'pagevitals-admin',
+            'pagevitals_setting_section'
         );
 
         add_settings_field(
             'enable_csp',
-            'Enable Content Security Policy',
+            'Adjust Content Security Policy',
             array($this, 'enable_csp_callback'),
-            'pagevitals-rum-admin',
-            'pagevitals_rum_setting_section'
+            'pagevitals-admin',
+            'pagevitals_setting_section'
         );
 
         add_settings_field(
             'page_selection',
             'Page Selection',
             array($this, 'page_selection_callback'),
-            'pagevitals-rum-admin',
-            'pagevitals_rum_setting_section'
+            'pagevitals-admin',
+            'pagevitals_setting_section'
         );
 
         add_settings_field(
             'selected_pages',
             'Selected Pages',
             array($this, 'selected_pages_callback'),
-            'pagevitals-rum-admin',
-            'pagevitals_rum_setting_section'
+            'pagevitals-admin',
+            'pagevitals_setting_section'
+        );
+
+        // Enqueue custom script
+        wp_enqueue_script(
+            'pagevitals-admin-script', 
+            plugins_url('admin/admin.js', __FILE__), 
+            array(), 
+            filemtime(plugin_dir_path(__FILE__) . 'admin.js'),
+            true
         );
     }
 
@@ -120,35 +134,35 @@ class PageVitals_RUM {
     }
 
     public function section_info() {
-        echo 'Enter your settings below:';
+        echo 'Enter your info below and hit Save Changes to enable PageVitals';
     }
 
     public function website_id_callback() {
         printf(
-            '<input type="text" id="website_id" name="pagevitals_rum_options[website_id]" value="%s" />',
+            '<input type="text" id="website_id" name="pagevitals_options[website_id]" value="%s" />',
             isset($this->options['website_id']) ? esc_attr($this->options['website_id']) : ''
         );
-        echo '<p class="description">You can find your website ID by going to Settings in your PageVitals account. The blue box next to "Website Settings" is your website ID.</p>';
+        echo '<p class="description">You can find your website ID by going to <a href="https://app.pagevitals.com/website/settings" target="_blank">Settings</a> in your PageVitals account. The blue box next to "Website Settings" is your website ID.</p><p class="description">Leave blank to disable.';
     }
 
     public function enable_csp_callback() {
         printf(
-            '<input type="checkbox" name="pagevitals_rum_options[enable_csp]" %s />',
+            '<input type="checkbox" name="pagevitals_options[enable_csp]" %s />',
             (isset($this->options['enable_csp']) && $this->options['enable_csp'] === 'on') ? 'checked' : ''
         );
         echo '<p class="description">Warning: Enabling this option will modify your site\'s Content-Security-Policy only if one already exists. It will add the necessary directives for PageVitals to function. If your site doesn\'t have a CSP, no changes will be made. Please ensure this doesn\'t conflict with your site\'s security requirements.</p>';
     }
 
     public function page_selection_callback() {
-        $options = array('all' => 'All Pages', 'specific' => 'Specific Pages', 'exclude' => 'All Pages Except');
+        $options = array('all' => 'All Pages', 'specific' => 'Specific Pages', 'except' => 'All Pages Except');
         $selected = isset($this->options['page_selection']) ? $this->options['page_selection'] : 'all';
-        echo '<select id="page_selection" name="pagevitals_rum_options[page_selection]">';
+        echo '<select id="page_selection" name="pagevitals_options[page_selection]">';
         foreach ($options as $value => $label) {
             printf(
                 '<option value="%s" %s>%s</option>',
-                $value,
+                esc_attr($value),
                 selected($selected, $value, false),
-                $label
+                esc_html($label)
             );
         }
         echo '</select>';
@@ -156,35 +170,48 @@ class PageVitals_RUM {
 
     public function selected_pages_callback() {
         printf(
-            '<textarea id="selected_pages" name="pagevitals_rum_options[selected_pages]" rows="5" cols="50">%s</textarea>',
+            '<textarea id="selected_pages" name="pagevitals_options[selected_pages]" rows="5" cols="50">%s</textarea>',
             isset($this->options['selected_pages']) ? esc_textarea($this->options['selected_pages']) : ''
         );
-        echo '<p class="description">Enter page/post IDs or slugs, one per line.</p>';
+        echo wp_kses_post('<p class="description">Enter page/post IDs or slugs, one per line.</p>');
     }
 
-    public function insert_pagevitals_script() {
-        $options = get_option('pagevitals_rum_options');
+    public function enqueue_pagevitals_script() {
+        $options = get_option('pagevitals_options');
         
         if (empty($options['website_id'])) {
             return;
         }
-
-        $should_insert = $this->should_insert_script();
-        
-        if (!$should_insert) {
+    
+        if (!$this->should_insert_script()) {
             return;
         }
-
-        $script = "(function(c,f,d,g,e){function h(b,l,m){b=b.createElement(l);b.async=b.defer=!0;b.src=m;k.appendChild(b)}var k=c.getElementsByTagName(d)[0].parentNode,a=c.createElement('link');f.webdriver||/lighthouse|headlesschrome|ptst/i.test(f.userAgent)||(a.relList&&'function'===typeof a.relList.supports&&a.relList.supports(g)&&'as'in a?(a.href=e,a.rel=g,a.as=d,a.addEventListener('load',function(){h(c,d,e)}),k.appendChild(a)):h(c,d,e))})(document,navigator,'script','preload','https://cdn.pgvt.io/{$options['website_id']}.js');";
-
-        echo "<script>{$script}</script>\n";
+    
+        // Use plugin version as script version
+        $plugin_data = get_file_data(__FILE__, array('Version' => 'Version'), false);
+        $plugin_version = $plugin_data['Version'];
+    
+        wp_enqueue_script(
+            'pagevitals-script',
+            'https://cdn.pgvt.io/' . esc_js($options['website_id']) . '.js',
+            array(),
+            $plugin_version,
+            true
+        );
+    
+        // Add async and defer attributes to the script
+        add_filter('script_loader_tag', function($tag, $handle) {
+            if ('pagevitals-script' === $handle) {
+                return str_replace(' src', ' async defer src', $tag);
+            }
+            return $tag;
+        }, 10, 2);
     }
 
     private function should_insert_script() {
-        $options = get_option('pagevitals_rum_options');
+        $options = get_option('pagevitals_options');
         $page_selection = isset($options['page_selection']) ? $options['page_selection'] : 'all';
-        $selected_pages = isset($options['selected_pages']) ? explode("\n", $options['selected_pages']) : array();
-        $selected_pages = array_map('trim', $selected_pages);
+        $selected_pages = isset($options['selected_pages']) ? array_map('trim', explode("\n", $options['selected_pages'])) : array();
 
         if ($page_selection === 'all') {
             return true;
@@ -197,7 +224,8 @@ class PageVitals_RUM {
             return in_array($current_id, $selected_pages) || in_array($current_slug, $selected_pages);
         }
 
-        if ($page_selection === 'exclude') {
+        if ($page_selection === 'except') {
+            // Only return true if the current page is not in the exclude list
             return !in_array($current_id, $selected_pages) && !in_array($current_slug, $selected_pages);
         }
 
@@ -205,7 +233,7 @@ class PageVitals_RUM {
     }
 
     public function add_csp_headers() {
-        $options = get_option('pagevitals_rum_options');
+        $options = get_option('pagevitals_options');
         
         if (isset($options['enable_csp']) && $options['enable_csp'] === 'on') {
             $csp_updates = array(
@@ -258,4 +286,4 @@ class PageVitals_RUM {
     }
 }
 
-$pagevitals_rum = new PageVitals_RUM();
+$pagevitals = new PageVitals();
