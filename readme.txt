@@ -20,11 +20,11 @@ Integrates PageVitals Field Testing (RUM) into your WordPress site.
 - No cookies are read or written
 - No user behavior is monitored, such as mouse or keyboard events
 
-For full privacy details, refer to our [Privacy Policy](https://pagevitals.com/privacy/#4.-end-users-visiting-a-website-that-uses-pagevitals-field-testing-script).
+The script is loaded via the subdomain cdn.pgvt.io and the performance data is sent to the sundomain `in.pgvt.io`.
 
-### Privacy and Terms
+You can visit PageVitals here: https://pagevitals.com
 
-This plugin relies on PageVitals services for performance monitoring. Refer to the [Privacy Policy](https://pagevitals.com/privacy) and [Terms of Service](https://pagevitals.com/terms).
+For full privacy details, refer to our Privacy Policy (https://pagevitals.com/privacy/) and Terms of Service (https://pagevitals.com/terms). 
 
 **Benefits**
 
